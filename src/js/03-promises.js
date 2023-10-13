@@ -13,20 +13,20 @@ function getInputValues() {
   };
 }
 
-async function formSubmit(event) {
+function formSubmit(event) {
   event.preventDefault();
-  let delay = getInputValues().delay; 
-  const { step, amount } = getInputValues();
+  const { step, amount, delay } = getInputValues();
 
-  for (let i = 0; i < amount; i++) {
-    try {
-      await create(i + 1, delay);
-      Notify.success(`✅ Fulfilled promise ${i + 1} in ${delay}ms`);
-    } catch (error) {
-      Notify.failure(`❌ Rejected promise ${i + 1} in ${delay}ms`);
-    }
-    delay += step;
+  const promises = [];
+  for (let i = 1; i <= amount; i++) {
+    promises.push(create(i, delay + (i - 1) * step));
   }
+
+  Promise.all(promises.map((promise, index) => {
+    return promise
+      .then(() => Notify.success(`✅ Fulfilled promise ${index + 1} in ${delay + index * step}ms`))
+      .catch(() => Notify.failure(`❌ Rejected promise ${index + 1} in ${delay + index * step}ms`));
+  }));
 }
 
 function createPromise(position, delay) {

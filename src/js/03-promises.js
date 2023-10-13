@@ -15,7 +15,8 @@ function getInputValues() {
 
 async function formSubmit(event) {
   event.preventDefault();
-  const { delay, step, amount } = getInputValues();
+  let delay = getInputValues().delay; 
+  const { step, amount } = getInputValues();
 
   for (let i = 0; i < amount; i++) {
     try {
@@ -46,4 +47,3 @@ async function create(position, delay) {
 }
 
 form.addEventListener('submit', formSubmit);
-form.addEventListener('input', getInputValues);

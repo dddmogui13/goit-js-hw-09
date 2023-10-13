@@ -1,6 +1,7 @@
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
+
 const dateEl = document.querySelector('#datetime-picker');
 const startBtn = document.querySelector('[data-start]');
 const timerElements = {
@@ -11,6 +12,7 @@ const timerElements = {
 };
 
 let timerId = null;
+let isTimerRunning = false;
 
 function initStyle() {
   dateEl.style.fontWeight = '700';
@@ -42,26 +44,57 @@ function addPad(value) {
   return String(value).padStart(2, '0');
 }
 
-function countTime() {
-  setActive(false);
-  timerId = setInterval(() => {
-    const futureDate = new Date(dateEl.value);
-    const dif = futureDate - Date.now();
+function updateTimerDisplay(dif) {
+  const { days, hours, minutes, seconds } = convertMs(dif);
+  Object.entries(timerElements).forEach(([key, element]) => {
+    element.textContent = addPad({ days, hours, minutes, seconds }[key]);
+  });
+}
 
-    if (dif > 1000) {
-      const { days, hours, minutes, seconds } = convertMs(dif);
-      Object.entries(timerElements).forEach(([key, element]) => {
-        element.textContent = addPad({ days, hours, minutes, seconds }[key]);
-      });
-    } else {
-      clearInterval(timerId);
+function startTimer() {
+  if (!isTimerRunning) {
+    isTimerRunning = true;
+    setActive(true);
+
+    const futureDate = new Date(dateEl.value);
+    const now = new Date();
+
+    if (futureDate <= now) {
+      Notify.failure('Please choose a date in the future');
+      setActive(false);
+      isTimerRunning = false;
+      return;
     }
-  }, 1000);
+
+    let dif = futureDate - now;
+    updateTimerDisplay(dif);
+
+    timerId = setInterval(() => {
+      if (dif > 1000) {
+        dif -= 1000;
+        updateTimerDisplay(dif);
+      } else {
+        clearInterval(timerId);
+        updateTimerDisplay(0);
+        Notify.success('Timer reached 00:00');
+        setActive(false);
+        isTimerRunning = false;
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerId);
+  updateTimerDisplay(0);
+  setActive(false);
+  isTimerRunning = false;
 }
 
 initStyle();
 setActive(false);
-startBtn.addEventListener('click', countTime);
+startBtn.addEventListener('click', startTimer);
+
 flatpickr(dateEl, {
   enableTime: true,
   time_24hr: true,
@@ -73,6 +106,7 @@ flatpickr(dateEl, {
       setActive(true);
     } else {
       setActive(false);
+      resetTimer();
     }
   },
 });
